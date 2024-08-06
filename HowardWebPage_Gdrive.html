@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher Access</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            animation: fadeIn 1s ease-in-out;
+        }
+        .header {
+            background-color: #003366;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo img {
+            height: 40px;
+        }
+        .header .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        .header .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .header .search-icon {
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            animation: slideIn 1s ease-in-out;
+        }
+        h1 {
+            text-align: center;
+            animation: fadeIn 2s ease-in-out;
+        }
+        input[type="text"], input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="submit"]:hover {
+            border-color: #0078d4;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="Howard_University_seal.png" alt="Howard University Seal">
+        </div>
+        <div class="nav-links">
+            <a href="#">APPLY</a>
+            <a href="#">VISIT</a>
+            <a href="#">GIVE</a>
+        </div>
+        <div class="search-icon">🔍</div>
+    </div>
+    <div class="container">
+        <h1>Access Your PDF</h1>
+        <form id="voucherForm">
+            <label for="voucherId">Enter Voucher ID:</label>
+            <input type="text" id="voucherId" name="voucherId" required>
+            <input type="submit" value="Submit">
+        </form>
+        <div id="result" class="message"></div>
+    </div>
+    <script>
+        function authenticate() {
+            return gapi.auth2.getAuthInstance()
+                .signIn({scope: "https://www.googleapis.com/auth/drive.readonly"})
+                .then(function() { console.log("Sign-in successful"); },
+                      function(err) { console.error("Error signing in", err); });
+        }
+        function loadClient() {
+            gapi.client.setApiKey("YOUR_API_KEY");
+            return gapi.client.load("https://content.googleapis.com/discovery/v1/apis/drive/v3/rest")
+                .then(function() { console.log("GAPI client loaded for API"); },
+                      function(err) { console.error("Error loading GAPI client for API", err); });
+        }
+        function fetchPDF(voucherId) {
+            return gapi.client.drive.files.list({
+                "q": `name contains '${voucherId}' and mimeType='application/pdf'`,
+                "fields": "files(id, name, webViewLink)"
+            })
+            .then(function(response) {
+                const files = response.result.files;
+                if (files && files.length > 0) {
+                    const file = files[0];
+                    document.getElementById('result').innerHTML = `<a href="${file.webViewLink}" target="_blank">Download PDF</a>`;
+                } else {
+                    document.getElementById('result').textContent = 'File not found.';
+                }
+            },
+            function(err) { console.error("Execute error", err); });
+        }
+        gapi.load("client:auth2", function() {
+            gapi.auth2.init({client_id: "YOUR_CLIENT_ID"});
+        });
+        document.getElementById('voucherForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const voucherId = document.getElementById('voucherId').value;
+            authenticate().then(loadClient).then(() => fetchPDF(voucherId));
+        });
+    </script>
+</body>
+</html>
